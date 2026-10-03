@@ -1,0 +1,12 @@
+# Dependencies
+**/node_modules/
+
+# Build output and generated files
+**/dist/
+/backend/build/
+/backend/coverage/
+*.tsbuildinfo
+
+# Local environment 
+/backend/.env
+/backend/.env.*
