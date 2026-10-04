@@ -1,8 +1,15 @@
 import dotenv from 'dotenv'; 
-import path from 'path'; 
+import { fileURLToPath } from 'node:url';
 
-// load .env file from root directory
-dotenv.config({path: path.resolve(process.cwd(), '.env')}); 
+dotenv.config({path: fileURLToPath(new URL('../../.env', import.meta.url))});
+
+function requiredEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Missing required environment variable: ${name}`);
+    }
+    return value;
+}
 
 export const env = { 
     server: { 
@@ -17,7 +24,8 @@ export const env = {
     }, 
 
     auth: { 
-        jwtSecret: process.env.JWT_SECRET as string,
+        jwtSecret: requiredEnv('JWT_SECRET'),
+        refreshTokenSecret: requiredEnv('REFRESH_TOKEN_SECRET')
     }, 
     cors: { 
         clientUrl: process.env.CLIENT_URL as string,
