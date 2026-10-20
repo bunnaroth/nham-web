@@ -25,7 +25,7 @@ export const CartModel = {
             INSERT INTO carts (user_id) 
             VALUES ($1)
             RETURNING 
-                id
+                id,
                 user_id AS "userId"
         `;
 
@@ -186,4 +186,3 @@ export const CartModel = {
         await pool.query(query, [cartId]); 
     },
 };
-
