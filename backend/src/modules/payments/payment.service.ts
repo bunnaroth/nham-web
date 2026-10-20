@@ -3,17 +3,19 @@ import type {
     CreatePaymentInput,
     Payment,
 } from "./payment.types.js";
+import {
+    validateObject,
+    validatePositiveInteger,
+} from "../../utils/validation.js";
 
 export const PaymentService = {
     async createPayment(
         userId: number,
         input: CreatePaymentInput,
     ): Promise<Payment> {
-        if (!Number.isInteger(input.orderId) || input.orderId <= 0) {
-            const error: any = new Error("Invalid order ID.");
-            error.status = 400;
-            throw error;
-        }
+        validateObject(input);
+        validatePositiveInteger(userId, "User ID");
+        validatePositiveInteger(input.orderId, "Order ID");
 
         const order = await PaymentModel.findOrderForPayment(
             input.orderId,
@@ -44,6 +46,7 @@ export const PaymentService = {
     },
 
     async getPayments(userId: number): Promise<Payment[]> {
+        validatePositiveInteger(userId, "User ID");
         return PaymentModel.findAllByUserId(userId);
     },
 
@@ -51,11 +54,8 @@ export const PaymentService = {
         userId: number,
         paymentId: number,
     ): Promise<Payment> {
-        if (!Number.isInteger(paymentId) || paymentId <= 0) {
-            const error: any = new Error("Invalid payment ID.");
-            error.status = 400;
-            throw error;
-        }
+        validatePositiveInteger(userId, "User ID");
+        validatePositiveInteger(paymentId, "Payment ID");
 
         const payment = await PaymentModel.findById(paymentId, userId);
 

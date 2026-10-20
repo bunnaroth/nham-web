@@ -1,8 +1,20 @@
 import { AddCartItemInput, CartResponse, UpdateCartItemInput } from "./cart.types.js";
 import { CartModel } from "./cart.model.js";
+import {
+    badRequest,
+    validateObject,
+    validatePositiveInteger,
+} from "../../utils/validation.js";
 
-export const CartService = { 
+const validateQuantity = (qty: number): void => {
+    if (!Number.isInteger(qty) || qty <= 0) {
+        badRequest("Quantity must be a positive integer.");
+    }
+};
+
+export const CartService = {
     async getCart(userId: number): Promise<CartResponse> { 
+        validatePositiveInteger(userId, "User ID");
         let cart = await CartModel.findLatestByUserId(userId); 
 
         if (!cart) { 
@@ -27,6 +39,10 @@ export const CartService = {
         userId: number, 
         input: AddCartItemInput, 
     ): Promise<CartResponse> { 
+        validateObject(input);
+        validatePositiveInteger(userId, "User ID");
+        validatePositiveInteger(input.menuItemId, "Menu item ID");
+        validateQuantity(input.qty);
         let cart = await CartModel.findLatestByUserId(userId); 
 
         if (!cart) { 
@@ -78,6 +94,10 @@ export const CartService = {
         menuItemId: number, 
         input: UpdateCartItemInput
     ): Promise<CartResponse> { 
+        validateObject(input);
+        validatePositiveInteger(userId, "User ID");
+        validatePositiveInteger(menuItemId, "Menu item ID");
+        validateQuantity(input.qty);
         const cart = await CartModel.findLatestByUserId(userId); 
 
         if (!cart) { 
@@ -112,6 +132,8 @@ export const CartService = {
         userId: number, 
         menuItemId: number
     ):Promise<CartResponse> { 
+        validatePositiveInteger(userId, "User ID");
+        validatePositiveInteger(menuItemId, "Menu item ID");
         const cart = await CartModel.findLatestByUserId(userId); 
 
         if(!cart) { 
@@ -137,6 +159,7 @@ export const CartService = {
     }, 
 
     async clearCart(userId: number): Promise<CartResponse> { 
+        validatePositiveInteger(userId, "User ID");
         const cart = await CartModel.findLatestByUserId(userId); 
 
         if (cart) { 

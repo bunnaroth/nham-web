@@ -5,9 +5,11 @@ import type {
 } from "./order.types.js";
 
 import { pool } from "../../config/db.js";
+import { validatePositiveInteger } from "../../utils/validation.js";
 
 export const OrderService = {
     async createOrder(userId: number): Promise<OrderResponse> {
+        validatePositiveInteger(userId, "User ID");
         const client = await pool.connect(); 
         let transactionStarted = false; 
         
@@ -95,6 +97,7 @@ export const OrderService = {
 
 
     async getOrders(userId: number): Promise<Order[]> {
+        validatePositiveInteger(userId, "User ID");
         return OrderModel.findAllByUserId(userId);
     },
 
@@ -102,11 +105,8 @@ export const OrderService = {
         userId: number,
         orderId: number,
     ): Promise<OrderResponse> {
-        if (!Number.isInteger(orderId) || orderId <= 0) {
-            const error: any = new Error("Invalid order ID.");
-            error.status = 400;
-            throw error;
-        }
+        validatePositiveInteger(userId, "User ID");
+        validatePositiveInteger(orderId, "Order ID");
 
         const order = await OrderModel.findById(orderId, userId);
 

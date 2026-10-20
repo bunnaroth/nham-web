@@ -29,15 +29,6 @@ export const MenuItemController = {
     async getMenuById(req: Request, res: Response, next: NextFunction): Promise<void> { 
         try { 
             const id = Number(req.params.id); 
-
-            if (!Number.isInteger(id) || id <= 0) { 
-                res.status(400).json({ 
-                    message: "Invalid menu item ID."
-                });
-
-                return; 
-            }
-
             const menuItem = await MenuItemService.getMenuItemById(id); 
 
             res.status(200).json(menuItem); 
@@ -61,14 +52,6 @@ export const MenuItemController = {
     async updateMenuItem(req: Request, res: Response, next: NextFunction): Promise<void> { 
         try { 
             const id = Number(req.params.id); 
-
-            if (!Number.isInteger(id) || id <= 0) { 
-                res.status(400).json({ 
-                    message: "Invalid menu item ID."
-                }); 
-                return;
-            }
-
             const input: UpdateMenuItemInput = req.body; 
 
             const menuItem = await MenuItemService.updateMenuItem(id, input); 
@@ -82,14 +65,6 @@ export const MenuItemController = {
     async deleteMenuItem( req: Request, res: Response, next: NextFunction): Promise<void> { 
         try { 
             const id = Number(req.params.id); 
-
-            if (!Number.isInteger(id) || id <= 0) { 
-                res.status(400).json({ 
-                    message: "Invalid menu item ID."
-                }); 
-                return; 
-            }
-
             const menuItem = await MenuItemService.deleteMenuItem(id); 
 
             res.status(200).json({ 
