@@ -1,5 +1,4 @@
 import { ErrorRequestHandler } from "express";
-import { env } from '../config/env.js'; 
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => { 
     const statusCode = err.status || 500; 

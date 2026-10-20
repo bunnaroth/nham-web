@@ -8,7 +8,7 @@ export const UserModel = {
         SELECT 
             id, 
             first_name AS "firstName", 
-            last_name AS "last_name", 
+            last_name AS "lastName", 
             email, 
             password_hash as "passwordHash", 
             created_at as "createdAt"
