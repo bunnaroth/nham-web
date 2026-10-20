@@ -1,22 +1,31 @@
 import { pool } from "../../config/db.js";
 import { CheckoutCartItem, Order, OrderItem } from "./order.types.js";
 
+import type {  PoolClient } from "pg"; 
+
 export const OrderModel = { 
-    async findCartByUserId(userId: number): Promise<{id: number} | null> { 
+    async findCartByUserId(
+        userId: number, 
+        client?: PoolClient
+    ): Promise<{id: number} | null> { 
         const query = `
             SELECT id
             FROM carts 
             WHERE user_id = $1 
             ORDER BY id DESC 
             LIMIT 1
+            ${client ? "FOR UPDATE" : ""}
         `; 
 
-        const result = await pool.query<{id: number}>(query, [userId]); 
+        const result = await (client ?? pool).query<{id: number}>(query, [userId]); 
 
         return result.rows[0] ?? null; 
     }, 
 
-    async findCartItemsForCheckout(cartId: number): Promise<CheckoutCartItem[]> { 
+    async findCartItemsForCheckout(
+        cartId: number,
+        client?: PoolClient
+    ): Promise<CheckoutCartItem[]> { 
         const query = `
             SELECT 
                 mi.id AS "menuItemId", 
@@ -32,12 +41,12 @@ export const OrderModel = {
             ORDER BY ci.id ASC
         `;
 
-        const result = await pool.query<CheckoutCartItem>(query, [cartId]); 
+        const result = await (client ?? pool).query<CheckoutCartItem>(query, [cartId]); 
 
         return result.rows; 
     }, 
 
-    async create(userId: number, totalAmount: string): Promise<Order> { 
+    async create(userId: number, totalAmount: string, client?: PoolClient): Promise<Order> { 
         const query = `
             INSERT INTO orders (
                 user_id, 
@@ -52,7 +61,7 @@ export const OrderModel = {
                 total_amount::text AS "totalAmount"
         `; 
 
-        const result = await pool.query<Order>(query, [userId, "pending", totalAmount]); 
+        const result = await (client ?? pool).query<Order>(query, [userId, "pending", totalAmount]); 
 
         const order = result.rows[0];
 
@@ -68,6 +77,7 @@ export const OrderModel = {
         menuItemId: number, 
         qty: number, 
         unitPrice: string,
+        client?: PoolClient
     ): Promise<void> { 
         const query = `
             INSERT INTO order_items ( 
@@ -79,7 +89,7 @@ export const OrderModel = {
             VALUES ($1, $2, $3, $4)
         `;
 
-        await pool.query(query, [
+        await (client ?? pool).query(query, [
             orderId, 
             menuItemId, 
             qty, 
@@ -87,13 +97,13 @@ export const OrderModel = {
         ]); 
     }, 
 
-    async clearCart(cartId: number): Promise<void> { 
+    async clearCart(cartId: number, client?: PoolClient): Promise<void> { 
         const query = `
             DELETE FROM cart_items 
             WHERE cart_id = $1
         `;
 
-        await pool.query(query, [cartId]);
+        await (client ?? pool).query(query, [cartId]);
     }, 
 
     async findAllByUserId(
@@ -139,7 +149,8 @@ export const OrderModel = {
     }, 
 
     async findItemsByOrderId(
-        orderId: number
+        orderId: number, 
+        client?: PoolClient,
     ): Promise<OrderItem[]> { 
         const query = `
             SELECT 
@@ -157,7 +168,7 @@ export const OrderModel = {
             ORDER BY oi.id ASC
         `;
 
-        const result = await pool.query<OrderItem>(
+        const result = await (client ?? pool).query<OrderItem>(
             query, 
             [orderId]
         );

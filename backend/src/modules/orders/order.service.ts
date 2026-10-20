@@ -4,72 +4,95 @@ import type {
     OrderResponse,
 } from "./order.types.js";
 
+import { pool } from "../../config/db.js";
+
 export const OrderService = {
     async createOrder(userId: number): Promise<OrderResponse> {
-        const cart = await OrderModel.findCartByUserId(userId);
+        const client = await pool.connect(); 
+        let transactionStarted = false; 
+        
+        try { 
+            await client.query("BEGIN"); 
+            transactionStarted = true; 
 
-        if (!cart) {
-            const error: any = new Error("Cart was not found.");
-            error.status = 404;
-            throw error;
-        }
+            const cart = await OrderModel.findCartByUserId(userId);
 
-        const cartItems = await OrderModel.findCartItemsForCheckout(
-            cart.id,
-        );
+            if (!cart) {
+                const error: any = new Error("Cart was not found.");
+                error.status = 404;
+                throw error;
+            }
 
-        if (cartItems.length === 0) {
-            const error: any = new Error(
-                "Cannot create an order from an empty cart.",
+            const cartItems = await OrderModel.findCartItemsForCheckout(
+                cart.id,
             );
-            error.status = 400;
-            throw error;
-        }
 
-        const unavailableItem = cartItems.find(
-            (item) => !item.isAvailable,
-        );
+            if (cartItems.length === 0) {
+                const error: any = new Error(
+                    "Cannot create an order from an empty cart.",
+                );
+                error.status = 400;
+                throw error;
+            }
 
-        if (unavailableItem) {
-            const error: any = new Error(
-                `${unavailableItem.name} is currently unavailable.`,
+            const unavailableItem = cartItems.find(
+                (item) => !item.isAvailable,
             );
-            error.status = 400;
-            throw error;
-        }
 
-        const totalCents = cartItems.reduce(
-            (sum, item) =>
-                sum +
-                Math.round(Number(item.unitPrice) * 100) * item.qty,
-            0,
-        );
+            if (unavailableItem) {
+                const error: any = new Error(
+                    `${unavailableItem.name} is currently unavailable.`,
+                );
+                error.status = 400;
+                throw error;
+            }
 
-        const totalAmount = (totalCents / 100).toFixed(2);
-
-        const order: Order = await OrderModel.create(
-            userId,
-            totalAmount,
-        );
-
-        for (const item of cartItems) {
-            await OrderModel.insertItem(
-                order.id,
-                item.menuItemId,
-                item.qty,
-                item.unitPrice,
+            const totalCents = cartItems.reduce(
+                (sum, item) =>
+                    sum +
+                    Math.round(Number(item.unitPrice) * 100) * item.qty,
+                0,
             );
+
+            const totalAmount = (totalCents / 100).toFixed(2);
+
+            const order: Order = await OrderModel.create(
+                userId,
+                totalAmount,
+            );
+
+            for (const item of cartItems) {
+                await OrderModel.insertItem(
+                    order.id,
+                    item.menuItemId,
+                    item.qty,
+                    item.unitPrice,
+                );
+            }
+
+            await OrderModel.clearCart(cart.id);
+
+            const items = await OrderModel.findItemsByOrderId(order.id);
+
+            return {
+                ...order,
+                items,
+            };
+        } catch (error) { 
+            if (transactionStarted) { 
+                try { 
+                    await client.query("ROLLBACK");
+                } catch { 
+                    
+                }
+            }
+
+            throw error;
+        } finally { 
+            client.release();
         }
+    }, 
 
-        await OrderModel.clearCart(cart.id);
-
-        const items = await OrderModel.findItemsByOrderId(order.id);
-
-        return {
-            ...order,
-            items,
-        };
-    },
 
     async getOrders(userId: number): Promise<Order[]> {
         return OrderModel.findAllByUserId(userId);
